@@ -49,7 +49,7 @@ button.ghost{background:#F1F5F9;color:#334155;box-shadow:none;flex:0 0 110px}
 <div class="sticky"><span>Organic Chemistry · 100-Question Challenge</span><span id="prog">0 / 100 answered</span></div>
 <div class="hero"><h1>Organic Chemistry Challenge</h1><p style="margin-top:9px"><a href="./" style="color:#D1FAE5;font-weight:700">← 50-Question Practice Exam</a></p><p style="margin-top:9px"><a href="practice-100.html" style="color:#D1FAE5;font-weight:700">Ready for more? 100-Question Challenge →</a></p><p>100 difficult objective questions — choose A, B, C or D, submit, and see the explanation for every answer.</p></div>
 <main>
-<div class="score" id="score"><div class="big" id="scoreN">0/50</div><div class="sub" id="scoreD"></div><div class="msg" id="scoreM"></div></div>
+<div class="score" id="score"><div class="big" id="scoreN">0/100</div><div class="sub" id="scoreD"></div><div class="msg" id="scoreM"></div></div>
 <div id="list"></div>
 </main>
 <div class="bar"><div class="barin"><button class="ghost" id="reset" style="display:none" onclick="resetAll()">Try again</button><button id="submit" onclick="grade()">Submit answers</button></div></div>
@@ -60,7 +60,7 @@ const list=document.getElementById('list');
 let lastSec='', html='';
 DATA.forEach(function(q,i){
   if(q.section!==lastSec){html+='<div class="sechead">'+q.section+'</div>';lastSec=q.section;}
-  html+='<div class="card" id="c'+i+'"><div class="qmeta"><span class="qnum">Q'+q.n+'</span><span class="qtag">'+(i+1)+' of 50</span></div><div class="qtext">'+q.q+'</div>';
+  html+='<div class="card" id="c'+i+'"><div class="qmeta"><span class="qnum">Q'+q.n+'</span><span class="qtag">'+(i+1)+' of 100</span></div><div class="qtext">'+q.q+'</div>';
   q.opts.forEach(function(o,j){
     html+='<div class="opt" id="o'+i+'_'+j+'" onclick="pick('+i+','+j+')"><span class="key">'+'ABCD'[j]+'</span><span>'+o+'</span></div>';
   });

@@ -71,7 +71,7 @@ function pick(i,j){
   if(graded)return;
   picks[i]=j;
   for(let k=0;k<4;k++)document.getElementById('o'+i+'_'+k).classList.toggle('sel',k===j);
-  document.getElementById('prog').textContent=picks.filter(function(p){return p!==null}).length+' / 50 answered';
+  document.getElementById('prog').textContent=picks.filter(function(p){return p!==null}).length+' / 100 answered';
 }
 function grade(){
   if(graded)return;
@@ -108,7 +108,7 @@ function resetAll(){
   document.getElementById('score').classList.remove('show');
   document.getElementById('submit').style.display='block';
   document.getElementById('reset').style.display='none';
-  document.getElementById('prog').textContent='0 / 50 answered';
+  document.getElementById('prog').textContent='0 / 100 answered';
   window.scrollTo({top:0,behavior:'smooth'});
 }
 </script></body></html>

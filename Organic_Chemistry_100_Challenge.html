@@ -34,9 +34,6 @@ main{max-width:680px;margin:0 auto;padding:16px 14px 0}
 .exp{display:none;margin-top:11px;background:#F0FDFA;border-left:3px solid #00A884;border-radius:0 10px 10px 0;padding:11px 12px;font-size:13.5px;line-height:1.55;color:#134E4A}
 .exp b{display:block;font-size:11px;letter-spacing:.08em;margin-bottom:4px;color:#00875F}
 .card.done .exp{display:block}
-
-#mus{position:fixed;right:14px;bottom:calc(84px + env(safe-area-inset-bottom));width:46px;height:46px;border-radius:50%;border:none;background:#fff;color:#00A884;font-size:20px;line-height:1;box-shadow:0 2px 10px rgba(15,23,42,.18);z-index:60;display:flex;align-items:center;justify-content:center;cursor:pointer}
-#mus.playing{background:#00A884;color:#fff}
 .bar{position:fixed;left:0;right:0;bottom:0;background:#fff;border-top:1px solid #E2E8F0;padding:12px 16px calc(12px + env(safe-area-inset-bottom));z-index:50}
 .barin{max-width:680px;margin:0 auto;display:flex;gap:10px;align-items:center}
 button{flex:1;border:0;border-radius:13px;padding:15px;font-size:15px;font-weight:800;background:#00A884;color:#fff;cursor:pointer;box-shadow:0 3px 10px rgba(0,168,132,.35)}
@@ -114,31 +111,4 @@ function resetAll(){
   document.getElementById('prog').textContent='0 / 100 answered';
   window.scrollTo({top:0,behavior:'smooth'});
 }
-
-/* --- soft background instrumentation (self-contained, offline-safe) --- */
-var MUS={ctx:null,master:null,timer:null,step:0,on:false,
- chords:[[261.63,329.63,392.00,493.88],[220.00,261.63,329.63,392.00],[174.61,220.00,261.63,329.63],[196.00,246.94,293.66,392.00]],
- spark:[523.25,587.33,659.25,783.99,880.00]};
-MUS.pad=function(t){MUS.chords[MUS.step%4].forEach(function(f){
-  var o=MUS.ctx.createOscillator(),g=MUS.ctx.createGain();
-  o.type='sine';o.frequency.value=f;o.detune.value=(Math.random()*10-5);
-  g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(0.042,t+2.6);g.gain.linearRampToValueAtTime(0,t+8);
-  o.connect(g);g.connect(MUS.master);o.start(t);o.stop(t+8.3);});};
-MUS.chime=function(t){var o=MUS.ctx.createOscillator(),g=MUS.ctx.createGain();
-  o.type='triangle';o.frequency.value=MUS.spark[Math.floor(Math.random()*MUS.spark.length)];
-  var st=t+1+Math.random()*5.5;
-  g.gain.setValueAtTime(0,st);g.gain.linearRampToValueAtTime(0.03,st+0.03);g.gain.exponentialRampToValueAtTime(0.0001,st+2.8);
-  o.connect(g);g.connect(MUS.master);o.start(st);o.stop(st+3);};
-MUS.tick=function(){var t=MUS.ctx.currentTime+0.05;MUS.pad(t);if(Math.random()<0.75)MUS.chime(t);MUS.step++;MUS.timer=setTimeout(MUS.tick,8000);};
-MUS.start=function(){if(!MUS.ctx){MUS.ctx=new (window.AudioContext||window.webkitAudioContext)();
-  MUS.master=MUS.ctx.createGain();MUS.master.gain.value=0.55;
-  var lp=MUS.ctx.createBiquadFilter();lp.type='lowpass';lp.frequency.value=1400;
-  MUS.master.connect(lp);lp.connect(MUS.ctx.destination);}
-  MUS.ctx.resume();MUS.step=0;MUS.tick();};
-MUS.stop=function(){clearTimeout(MUS.timer);};
-function musToggle(){var b=document.getElementById('mus');
-  if(MUS.on){MUS.on=false;MUS.stop();b.textContent='♪';b.classList.remove('playing');b.setAttribute('aria-label','Play soft background music');}
-  else{MUS.on=true;MUS.start();b.textContent='⏸';b.classList.add('playing');b.setAttribute('aria-label','Pause background music');}}
-
-</script><button id="mus" onclick="musToggle()" aria-label="Play soft background music">♪</button>
-</body></html>
+</script></body></html>

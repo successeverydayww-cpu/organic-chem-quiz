@@ -115,30 +115,68 @@ function resetAll(){
   window.scrollTo({top:0,behavior:'smooth'});
 }
 
-/* --- soft background instrumentation (self-contained, offline-safe) --- */
-var MUS={ctx:null,master:null,timer:null,step:0,on:false,
- chords:[[261.63,329.63,392.00,493.88],[220.00,261.63,329.63,392.00],[174.61,220.00,261.63,329.63],[196.00,246.94,293.66,392.00]],
- spark:[523.25,587.33,659.25,783.99,880.00]};
-MUS.pad=function(t){MUS.chords[MUS.step%4].forEach(function(f){
-  var o=MUS.ctx.createOscillator(),g=MUS.ctx.createGain();
-  o.type='sine';o.frequency.value=f;o.detune.value=(Math.random()*10-5);
-  g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(0.042,t+2.6);g.gain.linearRampToValueAtTime(0,t+8);
-  o.connect(g);g.connect(MUS.master);o.start(t);o.stop(t+8.3);});};
-MUS.chime=function(t){var o=MUS.ctx.createOscillator(),g=MUS.ctx.createGain();
-  o.type='triangle';o.frequency.value=MUS.spark[Math.floor(Math.random()*MUS.spark.length)];
-  var st=t+1+Math.random()*5.5;
-  g.gain.setValueAtTime(0,st);g.gain.linearRampToValueAtTime(0.03,st+0.03);g.gain.exponentialRampToValueAtTime(0.0001,st+2.8);
-  o.connect(g);g.connect(MUS.master);o.start(st);o.stop(st+3);};
-MUS.tick=function(){var t=MUS.ctx.currentTime+0.05;MUS.pad(t);if(Math.random()<0.75)MUS.chime(t);MUS.step++;MUS.timer=setTimeout(MUS.tick,8000);};
-MUS.start=function(){if(!MUS.ctx){MUS.ctx=new (window.AudioContext||window.webkitAudioContext)();
-  MUS.master=MUS.ctx.createGain();MUS.master.gain.value=0.55;
-  var lp=MUS.ctx.createBiquadFilter();lp.type='lowpass';lp.frequency.value=1400;
-  MUS.master.connect(lp);lp.connect(MUS.ctx.destination);}
-  MUS.ctx.resume();MUS.step=0;MUS.tick();};
-MUS.stop=function(){clearTimeout(MUS.timer);};
-function musToggle(){var b=document.getElementById('mus');
-  if(MUS.on){MUS.on=false;MUS.stop();b.textContent='♪';b.classList.remove('playing');b.setAttribute('aria-label','Play soft background music');}
-  else{MUS.on=true;MUS.start();b.textContent='⏸';b.classList.add('playing');b.setAttribute('aria-label','Pause background music');}}
+/* --- rich keyboard-style background music (self-contained, offline-safe) --- */
+var MUS={ctx:null,master:null,wet:null,timer:null,nextT:0,ci:0,on:false,userStopped:false};
+MUS.prog=[
+ {b:36,notes:[60,64,67],mel:[[0,76],[2,79],[4,84],[8,83],[10,79],[12,76]]},
+ {b:35,notes:[59,62,67],mel:[[0,74],[2,71],[4,74],[8,76],[10,74],[12,71]]},
+ {b:33,notes:[57,60,64],mel:[[0,72],[2,76],[4,81],[8,79],[10,76],[12,72]]},
+ {b:29,notes:[57,60,65],mel:[[0,69],[2,72],[4,77],[8,76],[10,72],[12,69]]}
+];
+function mf(m){return 440*Math.pow(2,(m-69)/12);}
+MUS.init=function(){if(MUS.ctx)return;
+  MUS.ctx=new (window.AudioContext||window.webkitAudioContext)();
+  var lp=MUS.ctx.createBiquadFilter();lp.type='lowpass';lp.frequency.value=3800;
+  MUS.master=MUS.ctx.createGain();MUS.master.gain.value=0.9;
+  MUS.master.connect(lp);lp.connect(MUS.ctx.destination);
+  var dl=MUS.ctx.createDelay(1);dl.delayTime.value=0.29;
+  var fb=MUS.ctx.createGain();fb.gain.value=0.32;
+  MUS.wet=MUS.ctx.createGain();MUS.wet.gain.value=0.22;
+  lp.connect(dl);dl.connect(fb);fb.connect(dl);dl.connect(MUS.wet);MUS.wet.connect(MUS.ctx.destination);};
+MUS.note=function(t,f,vel,dur){
+  var g=MUS.ctx.createGain();
+  g.gain.setValueAtTime(0.0001,t);
+  g.gain.linearRampToValueAtTime(vel,t+0.012);
+  g.gain.exponentialRampToValueAtTime(Math.max(vel*0.3,0.001),t+0.25);
+  g.gain.exponentialRampToValueAtTime(0.0001,t+dur);
+  g.connect(MUS.master);
+  [['sine',1,1],['sine',2,0.35],['triangle',3,0.12]].forEach(function(p){
+    var o=MUS.ctx.createOscillator();o.type=p[0];o.frequency.value=f*p[1];
+    var og=MUS.ctx.createGain();og.gain.value=p[2];
+    o.connect(og);og.connect(g);o.start(t);o.stop(t+dur+0.1);});};
+MUS.padn=function(t,f,dur){
+  var g=MUS.ctx.createGain();
+  g.gain.setValueAtTime(0,t);
+  g.gain.linearRampToValueAtTime(0.026,t+1.4);
+  g.gain.setValueAtTime(0.026,Math.max(t+1.4,t+dur-1.6));
+  g.gain.linearRampToValueAtTime(0,t+dur);
+  var o=MUS.ctx.createOscillator();o.type='sine';o.frequency.value=f;
+  o.connect(g);g.connect(MUS.master);o.start(t);o.stop(t+dur+0.1);
+  var o2=MUS.ctx.createOscillator();o2.type='sine';o2.frequency.value=f*2;
+  var g2=MUS.ctx.createGain();g2.gain.setValueAtTime(0,t);g2.gain.linearRampToValueAtTime(0.011,t+2);g2.gain.linearRampToValueAtTime(0,t+dur);
+  o2.connect(g2);g2.connect(MUS.master);o2.start(t);o2.stop(t+dur+0.1);};
+MUS.schedChord=function(t0){
+  var ch=MUS.prog[MUS.ci%4],B=0.8,len=8*B,i;
+  MUS.padn(t0,mf(ch.b+12),len);
+  ch.notes.forEach(function(n){MUS.padn(t0,mf(n),len);});
+  MUS.note(t0,mf(ch.b),0.09,2.8);
+  ch.notes.forEach(function(n){MUS.note(t0,mf(n),0.05,1.7);});
+  var seq=[0,1,2,1];
+  for(i=2;i<16;i+=2){if(i%8!==0){MUS.note(t0+i*0.4,mf(ch.notes[seq[(i/2)%4]]),0.022,0.5);}}
+  ch.mel.forEach(function(m){MUS.note(t0+m[0]*0.4,mf(m[1]),0.085,0.85);});
+  MUS.ci++;
+  return len;};
+MUS.loop=function(){
+  var len=MUS.schedChord(MUS.nextT);
+  MUS.nextT=MUS.nextT+len;
+  MUS.timer=setTimeout(MUS.loop,Math.max(100,(MUS.nextT-MUS.ctx.currentTime-0.35)*1000));};
+MUS.ui=function(on){var b=document.getElementById('mus');if(!b)return;b.textContent=on?'\u23f8':'\u266a';b.classList.toggle('playing',on);b.setAttribute('aria-label',on?'Pause background music':'Play background music');};
+MUS.start=function(){MUS.init();MUS.ctx.resume();if(MUS.on)return;MUS.on=true;MUS.ci=0;MUS.nextT=MUS.ctx.currentTime+0.15;MUS.loop();MUS.ui(true);};
+MUS.stop=function(){if(!MUS.on)return;MUS.on=false;clearTimeout(MUS.timer);MUS.ui(false);};
+function musToggle(){if(MUS.on){MUS.userStopped=true;MUS.stop();}else{MUS.userStopped=false;MUS.start();}}
+MUS.autostart=function(){if(MUS.on||MUS.userStopped)return;try{MUS.start();}catch(e){}};
+window.addEventListener('load',function(){setTimeout(MUS.autostart,300);});
+['touchstart','pointerdown','keydown'].forEach(function(ev){document.addEventListener(ev,MUS.autostart,{capture:true});});
 
 </script><button id="mus" onclick="musToggle()" aria-label="Play soft background music">♪</button>
 </body></html>
